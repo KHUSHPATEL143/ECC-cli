@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevate Capital - User</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <script>
+        // --- Tailwind Configuration (Inherited from Dashboard) ---
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'deep-navy': '#0C0E17',
+                        'card-navy': '#10121B',
+                        'primary-gold': '#CBA35A',
+                        'secondary-gold': '#D4AF37',
+                        'accent-gold-light': '#E6C46A',
+                        'text-primary-light': '#E8E3D0',
+                        'text-secondary-light': '#A0A0A0',
+                    },
+                    fontFamily: {
+                        'heading': ['Cinzel', 'serif'],
+                        'body': ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'card-luxury': '0 4px 16px rgba(0, 0, 0, 0.4)',
+                        'gold-glow': '0 0 10px #E6C46A',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="font-body min-h-screen pb-20">
+    <div id="notification-banner-container" class="w-full"></div>
+    <script>
+        // Common JavaScript functions are now in script.js
+    </script>
+
+    <header class="bg-card-navy px-4 py-6 md:px-8">
+        <div class="container mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="font-heading text-3xl font-bold text-secondary-gold tracking-wider">
+                    USER
+                </h1>
+                <p class="text-text-secondary-light text-sm mt-1">Manage your preferences</p>
+            </div>
+            <div class="relative">
+                <button id="user-menu-button" class="w-10 h-10 bg-primary-gold rounded-full flex items-center justify-center text-deep-navy font-bold text-xl" type="button">
+                </button>
+                <div id="user-menu-dropdown" class="absolute right-0 mt-2 w-48 bg-card-navy rounded-md shadow-lg py-1 z-50 hidden">
+                    <div class="px-4 py-2 text-text-primary-light" id="user-menu-email"></div>
+                    <a href="#" onclick="signOut()" class="block px-4 py-2 text-sm text-text-primary-light hover:bg-primary-gold/10">Sign Out</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto p-4 md:p-8">
+        <div class="bg-card-navy p-6 rounded-2xl border border-[rgba(203,163,90,0.3)] shadow-card-luxury">
+            <h3 class="font-heading text-xl font-bold text-secondary-gold mb-6">Profile</h3>
+            
+            <div class="space-y-4 mb-8">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-text-secondary-light">Full Name</label>
+                    <input type="text" id="name" value="Loading..." readonly class="mt-1 block w-full bg-deep-navy border border-primary-gold/50 rounded-md shadow-sm py-2 px-3 text-text-primary-light focus:outline-none focus:ring-accent-gold-light focus:border-accent-gold-light">
+                </div>
+                <div>
+                    <label for="email" class="block text-sm font-medium text-text-secondary-light">Email Address</label>
+                    <input type="email" id="email" value="Loading..." readonly class="mt-1 block w-full bg-deep-navy border border-primary-gold/50 rounded-md shadow-sm py-2 px-3 text-text-primary-light focus:outline-none focus:ring-accent-gold-light focus:border-accent-gold-light">
+                </div>
+            </div>
+
+            <h3 class="font-heading text-xl font-bold text-secondary-gold mb-6 pt-4 border-t border-primary-gold/20">Contribution Summary</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div class="bg-deep-navy p-4 rounded-lg border border-primary-gold/20">
+                    <p class="text-sm text-text-secondary-light">Total Contributed</p>
+                    <p id="totalContribution" class="text-lg font-bold text-text-primary-light">Loading...</p>
+                </div>
+                <div class="bg-deep-navy p-4 rounded-lg border border-primary-gold/20">
+                    <p class="text-sm text-text-secondary-light">Last Contribution</p>
+                    <p id="lastContribution" class="text-lg font-bold text-text-primary-light">Loading...</p>
+                </div>
+            </div>
+
+            <h3 class="font-heading text-xl font-bold text-secondary-gold mb-6 pt-4 border-t border-primary-gold/20">Investment Performance</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div class="bg-deep-navy p-4 rounded-lg border border-primary-gold/20">
+                    <p class="text-sm text-text-secondary-light">My Fund Value</p>
+                    <p id="userTotalFundValue" class="text-lg font-bold text-text-primary-light">Loading...</p>
+                </div>
+                <div class="bg-deep-navy p-4 rounded-lg border border-primary-gold/20">
+                    <p class="text-sm text-text-secondary-light">My Total Return</p>
+                    <p id="userTotalReturn" class="text-lg font-bold text-text-primary-light">Loading...</p>
+                </div>
+                <div class="bg-deep-navy p-4 rounded-lg border border-primary-gold/20">
+                    <p class="text-sm text-text-secondary-light">Return Percentage</p>
+                    <p id="userReturnPercentage" class="text-lg font-bold text-text-primary-light">Loading...</p>
+                </div>
+                <div class="bg-deep-navy p-4 rounded-lg border border-primary-gold/20">
+                    <p class="text-sm text-text-secondary-light">Invested in Stocks</p>
+                    <p id="userInvestedInStocks" class="text-lg font-bold text-text-primary-light">Loading...</p>
+                </div>
+            </div>
+
+            <h3 class="font-heading text-xl font-bold text-secondary-gold mb-6 pt-4 border-t border-primary-gold/20">Account Information</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div class="bg-deep-navy p-4 rounded-lg border border-primary-gold/20">
+                    <p class="text-sm text-text-secondary-light">Join Date</p>
+                    <p id="joinDate" class="text-lg font-bold text-text-primary-light">Loading...</p>
+                </div>
+                <div class="bg-deep-navy p-4 rounded-lg border border-primary-gold/20">
+                    <p class="text-sm text-text-secondary-light">Account Status</p>
+                    <p id="accountStatus" class="text-lg font-bold text-text-primary-light">Loading...</p>
+                </div>
+            </div>
+
+            <h3 class="font-heading text-xl font-bold text-secondary-gold mb-6 pt-4 border-t border-primary-gold/20">Contribution History</h3>
+            <div id="contributionHistoryContainer" class="space-y-3 mb-8">
+                <p class="text-text-secondary-light text-center">Loading contribution history...</p>
+            </div>
+
+            <h3 class="font-heading text-xl font-bold text-secondary-gold mb-6 pt-4 border-t border-primary-gold/20">Notifications</h3>
+
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <span class="text-text-primary-light">Email Notifications</span>
+                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="emailToggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer" checked/>
+                        <label for="emailToggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer">.</label>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-text-primary-light">Push Notifications</span>
+                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="pushToggle" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                        <label for="pushToggle" class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer">.</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-primary-gold/20">
+                <button class="w-full py-3 text-card-navy font-bold uppercase tracking-wider bg-primary-gold rounded-full transition-all duration-300 hover:shadow-gold-glow hover:bg-accent-gold-light">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <nav class="fixed bottom-0 left-0 right-0 bg-card-navy border-t border-[rgba(203,163,90,0.3)] py-3 px-4 shadow-lg z-50">
+        <div class="flex justify-around items-center max-w-lg mx-auto">
+            <a href="home.html" class="flex flex-col items-center text-text-secondary-light hover:text-primary-gold text-xs font-medium group">
+                <img src="assets/home.png" class="icon-md mb-1" alt="assets">
+                Home
+            </a>
+            <a href="portfolio.html" class="flex flex-col items-center text-text-secondary-light hover:text-primary-gold text-xs font-medium group">
+                <img src="assets/portfolio.png" class="icon-md mb-1" alt="assets">
+                Portfolio
+            </a>
+            <a href="proofs.html" class="flex flex-col items-center text-text-secondary-light hover:text-primary-gold text-xs font-medium group">
+                <img src="assets/proof.png" class="icon-md mb-1" alt="assets">
+                Proofs
+            </a>
+            <a href="group.html" class="flex flex-col items-center text-text-secondary-light hover:text-primary-gold text-xs font-medium group">
+                <img src="assets/group.png" class="icon-md mb-1" alt="assets">
+                Group
+            </a>
+            <a href="user.html" class="flex flex-col items-center text-primary-gold text-xs font-medium group">
+                <img src="assets/user.png" class="icon-md mb-1" alt="assets">
+                User
+            </a>
+            <a id="admin-link" href="admin.html" class="flex flex-col items-center text-text-secondary-light hover:text-primary-gold text-xs font-medium group" style="display: none;">
+                <img src="assets/admin.png" class="icon-md mb-1" alt="assets">
+                Admin
+            </a>
+        </div>
+    </nav>
+
+    <script>
+        // User menu setup is now in script.js
+    </script>
+    <script>
+        // Notification functions are now in script.js
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>
