@@ -26,7 +26,7 @@ async function displayNotifications() {
 
         if (result.status === 'success' && result.data.length > 0) {
             const dismissed = JSON.parse(localStorage.getItem('dismissedNotifications') || '[]');
-            
+
             result.data.forEach(notification => {
                 if (!dismissed.includes(notification.id)) {
                     const banner = document.createElement('div');
@@ -53,12 +53,49 @@ function dismissNotification(id, bannerElement) {
     bannerElement.remove();
 }
 
+async function getReturnPercentage() {
+    try {
+        // We only need dashboard and portfolio data for this calculation
+        const [dashboardResponse, portfolioResponse] = await Promise.all([
+            fetch(`${APPS_SCRIPT_URL}?page=dashboard`),
+            fetch(`${APPS_SCRIPT_URL}?page=portfolio`)
+        ]);
+
+        const dashboardResult = await dashboardResponse.json();
+        const portfolioResult = await portfolioResponse.json();
+
+        if (dashboardResult.status === 'success' && dashboardResult.data &&
+            portfolioResult.status === 'success' && portfolioResult.data) {
+
+            const investedInStocks = dashboardResult.data['Invested in Stocks'] || 0;
+            
+            const sumOfCurrentHoldings = portfolioResult.data.reduce((sum, holding) => {
+                const currentPrice = parseFloat(holding['Current Price']) || 0;
+                const shares = parseFloat(holding['Shares']) || 0;
+                return sum + (currentPrice * shares);
+            }, 0);
+
+            const totalReturn = sumOfCurrentHoldings - investedInStocks;
+            
+            // Return as a factor, e.g., 0.05 for 5%
+            return investedInStocks > 0 ? (totalReturn / investedInStocks) : 0;
+
+        } else {
+            console.error('Failed to fetch data for return percentage:', dashboardResult.message, portfolioResult.message);
+            return 0; // Default to 0 if data fetch fails
+        }
+    } catch (error) {
+        console.error('Error calculating return percentage:', error);
+        return 0; // Default to 0 on error
+    }
+}
+
 // User Menu Button functionality
 function setupUserMenu() {
     const userMenuButton = document.getElementById('user-menu-button');
     const userMenuDropdown = document.getElementById('user-menu-dropdown');
     const userMenuEmail = document.getElementById('user-menu-email');
-
+    
     const userEmail = localStorage.getItem('userEmail');
 
     if (userEmail) {
@@ -66,12 +103,12 @@ function setupUserMenu() {
         userMenuEmail.textContent = userEmail;
     }
 
-    userMenuButton.addEventListener('click', function(event) {
+    userMenuButton.addEventListener('click', function (event) {
         event.stopPropagation();
         userMenuDropdown.classList.toggle('hidden');
     });
 
-    document.addEventListener('click', function(event) {
+    document.addEventListener('click', function (event) {
         if (!userMenuButton.contains(event.target) && !userMenuDropdown.contains(event.target)) {
             userMenuDropdown.classList.add('hidden');
         }
@@ -82,13 +119,12 @@ function setupUserMenu() {
 function setupAdminLink() {
     if (localStorage.getItem('isAdmin') === 'true') {
         const adminLink = document.getElementById('admin-link');
-        if(adminLink) adminLink.style.display = 'flex';
+        if (adminLink) adminLink.style.display = 'flex';
     }
 }
 
 // Call common functions on DOMContentLoaded
-document.addEventListener('DOMContentLoaded', function() {
-    checkAuthentication();
+document.addEventListener('DOMContentLoaded', function () {
     setupUserMenu();
     setupAdminLink();
     setTimeout(displayNotifications, 100); // Display notifications after a short delay

@@ -146,6 +146,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            checkAuthentication(); // Add this line
             if (sessionStorage.getItem('isAdmin') === 'true') {
                 const adminLink = document.getElementById('admin-link');
                 if(adminLink) adminLink.style.display = 'flex';

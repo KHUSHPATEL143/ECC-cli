@@ -194,6 +194,9 @@
         let portfolioGrowthChart; // Declare chart variable globally or in a scope accessible by update function
 
         document.addEventListener('DOMContentLoaded', async function() {
+            checkAuthentication(); // Add this line
+            let portfolioGrowthChart; // Declare chart variable globally or in a scope accessible by update function
+
             if (localStorage.getItem('isAdmin') === 'true') {
                 const adminLink = document.getElementById('admin-link');
                 if(adminLink) adminLink.style.display = 'flex';
@@ -388,21 +391,45 @@
             // Fetch generic dashboard data
             async function fetchDashboardData() {
                 try {
-                    const response = await fetch(`${APPS_SCRIPT_URL}?page=dashboard`);
-                    const result = await response.json();
+                    // Fetch all necessary data in parallel
+                    const [dashboardResponse, membersResponse, portfolioResponse] = await Promise.all([
+                        fetch(`${APPS_SCRIPT_URL}?page=dashboard`),
+                        fetch(`${APPS_SCRIPT_URL}?page=members`),
+                        fetch(`${APPS_SCRIPT_URL}?page=portfolio`)
+                    ]);
 
-                    if (result.status === 'success' && result.data) {
-                        document.getElementById('totalFundValue').textContent = new Intl.NumberFormat('en-IN').format(result.data['Total Fund Value'] || 0);
-                        document.getElementById('investedInStocks').textContent = new Intl.NumberFormat('en-IN').format(result.data['Invested in Stocks'] || 0);
+                    const dashboardResult = await dashboardResponse.json();
+                    const membersResult = await membersResponse.json();
+                    const portfolioResult = await portfolioResponse.json();
+
+                    if (dashboardResult.status === 'success' && dashboardResult.data &&
+                        membersResult.status === 'success' && membersResult.data &&
+                        portfolioResult.status === 'success' && portfolioResult.data) {
+
+                        const investedInStocks = dashboardResult.data['Invested in Stocks'] || 0;
                         
-                        const totalReturn = result.data['Total Return'] || 0;
-                        const returnPercentage = result.data['Return Percentage'] || '0.0%';
+                        const sumOfContributions = membersResult.data.reduce((sum, member) => {
+                            return sum + (parseFloat(member['Contribution']) || 0);
+                        }, 0);
+
+                        const sumOfCurrentHoldings = portfolioResult.data.reduce((sum, holding) => {
+                            const currentPrice = parseFloat(holding['Current Price']) || 0;
+                            const shares = parseFloat(holding['Shares']) || 0;
+                            return sum + (currentPrice * shares);
+                        }, 0);
+
+                        const totalFundValue = sumOfContributions - investedInStocks + sumOfCurrentHoldings;
+                        const totalReturn = sumOfCurrentHoldings - investedInStocks;
+                        const returnPercentage = investedInStocks > 0 ? (totalReturn / investedInStocks) * 100 : 0;
+
+                        document.getElementById('totalFundValue').textContent = new Intl.NumberFormat('en-IN').format(totalFundValue || 0);
+                        document.getElementById('investedInStocks').textContent = new Intl.NumberFormat('en-IN').format(investedInStocks);
                         
                         const totalReturnElement = document.getElementById('totalReturn');
                         const returnPercentageElement = document.getElementById('returnPercentage');
 
                         totalReturnElement.textContent = new Intl.NumberFormat('en-IN').format(totalReturn);
-                        returnPercentageElement.textContent = `${returnPercentage} this month`;
+                        returnPercentageElement.textContent = `${returnPercentage.toFixed(2)}% this month`;
 
                         if (totalReturn >= 0) {
                             totalReturnElement.closest('p').classList.remove('text-error-red');
@@ -416,10 +443,10 @@
                             returnPercentageElement.classList.add('text-error-red');
                         }
 
-                        document.getElementById('expectedReturn').textContent = result.data['Expected Return (Next Month)'] || '0.0%';
-                        document.getElementById('aiInsight').textContent = result.data['AI Insight'] || '"No new insights."';
+                        document.getElementById('expectedReturn').textContent = dashboardResult.data['Expected Return (Next Month)'] || '0.0%';
+                        document.getElementById('aiInsight').textContent = dashboardResult.data['AI Insight'] || '"No new insights."';
                     } else {
-                        console.error('Failed to fetch dashboard data:', result.message);
+                        console.error('Failed to fetch dashboard data:', dashboardResult.message, membersResult.message, portfolioResult.message);
                     }
                 } catch (error) {
                     console.error('Error fetching dashboard data:', error);
@@ -429,12 +456,6 @@
             fetchDashboardData();
             fetchMyContribution();
         });
-    </script>
-    <script>
-        // Notification functions are now in script.js
-    </script>
-    <script>
-        // User menu setup is now in script.js
     </script>
     <script src="script.js"></script>
 </body>

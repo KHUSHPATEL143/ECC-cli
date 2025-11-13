@@ -78,7 +78,7 @@
         <h3 class="font-heading text-xl font-bold text-secondary-gold mb-4 mt-6">HOLDINGS</h3>
 
         <div id="holdingsContainer" class="grid grid-cols-1 gap-4">
-            <!-- Portfolio holdings will be dynamically loaded here -->
+            <p class="text-text-secondary-light text-center">Loading holdings...</p>
         </div>
 
         <div class="mt-8 flex flex-col sm:flex-row gap-4">
@@ -122,6 +122,7 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
+            checkAuthentication(); // Add this line
             if (sessionStorage.getItem('isAdmin') === 'true') {
                 const adminLink = document.getElementById('admin-link');
                 if(adminLink) adminLink.style.display = 'flex';
@@ -265,13 +266,18 @@
 
             // Fetch portfolio data
             async function fetchPortfolioData() {
+                const holdingsContainer = document.getElementById('holdingsContainer');
                 try {
                     const response = await fetch(`${APPS_SCRIPT_URL}?page=portfolio`);
                     const result = await response.json();
 
                     if (result.status === 'success' && result.data) {
-                        const holdingsContainer = document.getElementById('holdingsContainer');
-                        holdingsContainer.innerHTML = ''; // Clear existing mock data
+                        holdingsContainer.innerHTML = ''; // Clear loading message
+
+                        if (result.data.length === 0) {
+                            holdingsContainer.innerHTML = '<p class="text-text-secondary-light text-center">No holdings found.</p>';
+                            return;
+                        }
 
                         result.data.forEach(holding => {
                             const purchasePrice = parseFloat(holding['Purchase Price']);
@@ -280,7 +286,7 @@
 
                             const totalPurchaseValue = purchasePrice * shares;
                             const totalCurrentValue = currentPrice * shares;
-                            const percentageChange = ((totalCurrentValue - totalPurchaseValue) / totalPurchaseValue) * 100;
+                            const percentageChange = totalPurchaseValue > 0 ? ((totalCurrentValue - totalPurchaseValue) / totalPurchaseValue) * 100 : 0;
 
                             const isPositive = percentageChange >= 0;
                             const textColorClass = isPositive ? 'text-success-green' : 'text-error-red';
@@ -312,9 +318,11 @@
                             holdingsContainer.innerHTML += holdingCard;
                         });
                     } else {
+                        holdingsContainer.innerHTML = `<p class="text-error-red text-center">Failed to load holdings: ${result.message || 'Unknown error'}</p>`;
                         console.error('Failed to fetch portfolio data:', result.message);
                     }
                 } catch (error) {
+                    holdingsContainer.innerHTML = `<p class="text-error-red text-center">An error occurred while fetching holdings.</p>`;
                     console.error('Error fetching portfolio data:', error);
                 }
             }

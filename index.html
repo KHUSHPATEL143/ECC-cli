@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <script>
-        // --- Tailwind Configuration (for custom luxury colours) ---
+        // --- Tailwind Configuration (for custom luxury colors) ---
         tailwind.config = {
             theme: {
                 extend: {
@@ -66,61 +66,143 @@
 
                     <div id="errorMessage" class="text-error-red text-sm mb-4 text-center" style="display: none;"></div>
 
-                    <button type="submit"
+                    <div class="mt-6">
+                        <label for="termsCheckbox" class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="termsCheckbox" class="h-4 w-4 rounded border-gray-300 text-primary-gold focus:ring-primary-gold" style="color-scheme: dark;">
+                            <span class="ml-2 text-sm text-text-primary-light">
+                                I have read and agree to the 
+                                <a href="terms.html?from=signin" target="_blank" class="underline hover:text-primary-gold" onclick="event.stopPropagation()">Terms & Conditions</a>
+                            </span>
+                        </label>
+                    </div>
+
+                    <button type="submit" id="signInButton" disabled
                         class="btn-gold-glow w-full mt-4 py-3 text-secondary-gold font-bold uppercase tracking-wider
-                            border border-primary-gold rounded-full transition-all duration-300 hover:shadow-gold-glow">
+                            border border-primary-gold rounded-full transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none">
                         Sign In
                     </button>
                 </form>
 
-                <div class="text-center mt-6">
-                    <a href="signup.html" class="text-sm text-primary-gold hover:text-accent-gold-light">Don't have an account? Request Access</a>
-                </div>
-            </div>
+                                <div class="text-center mt-6">
+
+                                    <a href="signup.html" class="text-sm text-primary-gold hover:text-accent-gold-light">Don't have an account? Request Access</a>
+
+                                </div>
+
+                            </div>
         </div>
     </main>
 
     <script>
-        document.getElementById('signInForm').addEventListener('submit', async function(event) {
-            event.preventDefault(); // Prevent default form submission
-
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const errorMessageDiv = document.getElementById('errorMessage');
-
-            errorMessageDiv.style.display = 'none'; // Hide previous errors
-
-            try {
-                const response = await fetch(APPS_SCRIPT_URL, { // Use APPS_SCRIPT_URL from script.js
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'text/plain;charset=utf-8',
-                    },
-                    body: JSON.stringify({
-                        action: 'signIn',
-                        email: email,
-                        password: password
-                    })
-                });
-
-                const result = await response.json();
-
-                if (result.status === 'success' && result.data.isAuthenticated) {
-                    // Store user info in session storage
-                    localStorage.setItem('isAuthenticated', 'true');
-                    localStorage.setItem('userEmail', result.data.email);
-                    localStorage.setItem('isAdmin', result.data.isAdmin);
-                    window.location.href = 'home.html'; // Redirect to home page
-                } else {
-                    errorMessageDiv.textContent = result.message || result.data.message || 'Sign-in failed. Please check your credentials.';
-                    errorMessageDiv.style.display = 'block';
+        function setButtonLoading(button, isLoading) {
+            if (!button) return;
+            if (isLoading) {
+                button.disabled = true;
+                button.dataset.originalText = button.innerHTML;
+                button.innerHTML = `
+                    <svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                `;
+            } else {
+                button.disabled = false;
+                if (button.dataset.originalText) {
+                    button.innerHTML = button.dataset.originalText;
                 }
-            } catch (error) {
-                console.error('Error during sign-in:', error);
-                errorMessageDiv.textContent = 'An unexpected error occurred. Please try again.';
-                errorMessageDiv.style.display = 'block';
+            }
+        }
+
+        const termsCheckbox = document.getElementById('termsCheckbox');
+        const signInButton = document.getElementById('signInButton');
+
+        // Initial state: button disabled
+        signInButton.disabled = true;
+
+        // Click listener for the label (or checkbox)
+        document.querySelector('label[for="termsCheckbox"]').addEventListener('click', function(event) {
+            // Prevent the default checkbox toggle
+            event.preventDefault(); 
+            
+            // If the checkbox is currently unchecked, open terms page
+            if (!termsCheckbox.checked) {
+                window.open('terms.html?from=signin', '_blank');
+            } else {
+                // If it's already checked, allow user to uncheck it
+                termsCheckbox.checked = false;
+                signInButton.disabled = true;
             }
         });
+
+        // 2. Function to check for agreement
+        const checkAgreement = () => {
+            // Check via localStorage (for when the terms tab is closed)
+            if (localStorage.getItem('termsAgreed') === 'true') {
+                termsCheckbox.checked = true;
+                signInButton.disabled = false;
+                localStorage.removeItem('termsAgreed'); // Clean up
+            }
+            // Check via URL param (as a fallback)
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('agreed') === 'true') {
+                termsCheckbox.checked = true;
+                signInButton.disabled = false;
+                // Optional: Clean the URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+        };
+
+        // 3. Listen for events to check for agreement
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAgreement();
+
+            document.getElementById('signInForm').addEventListener('submit', async function(event) {
+                event.preventDefault(); // Prevent default form submission
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const errorMessageDiv = document.getElementById('errorMessage');
+                const submitButton = event.target.querySelector('button[type="submit"]');
+
+                errorMessageDiv.style.display = 'none'; // Hide previous errors
+                setButtonLoading(submitButton, true);
+
+                try {
+                    const response = await fetch(APPS_SCRIPT_URL, { // Use APPS_SCRIPT_URL from script.js
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8',
+                        },
+                        body: JSON.stringify({
+                            action: 'signIn',
+                            email: email,
+                            password: password
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.status === 'success' && result.data.isAuthenticated) {
+                        // Store user info in session storage
+                        localStorage.setItem('isAuthenticated', 'true');
+                        localStorage.setItem('userEmail', result.data.email);
+                        localStorage.setItem('isAdmin', result.data.isAdmin);
+                        window.location.href = 'home.html'; // Redirect to home page
+                    } else {
+                        errorMessageDiv.textContent = result.message || result.data.message || 'Sign-in failed. Please check your credentials.';
+                        errorMessageDiv.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Error during sign-in:', error);
+                    errorMessageDiv.textContent = 'An unexpected error occurred. Please try again.';
+                    errorMessageDiv.style.display = 'block';
+                } finally {
+                    setButtonLoading(submitButton, false);
+                }
+            });
+        });
+        window.addEventListener('focus', checkAgreement);
     </script>
     <script src="script.js"></script>
 </body>

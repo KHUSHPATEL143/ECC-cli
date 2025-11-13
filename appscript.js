@@ -5,7 +5,8 @@
  *    - 'Users': With 'Name', 'Email', 'Password', and 'Status' columns.
  *    - 'Notifications': With 'ID', 'Message', 'TargetEmail', 'IsActive', 'CreatedAt'.
  *    - 'PortfolioHistory': With 'Date' and 'Value' columns for the growth chart.
- *    - 'ContributionsLog': With 'Email', 'Amount', and 'Date' columns. */
+ *    - 'ContributionsLog': With 'Email', 'Amount', 'Date', 'Notes', 'IsMonthly' columns.
+ */
 
 // --- CONFIGURATION ---
 const ADMIN_EMAILS = ["khushpatel9979@gmail.com", "janmejay@gmail.com"];
@@ -123,7 +124,7 @@ function doPost(e) {
         response = handleUpdatePortfolioHolding(requestBody.rowIndex, requestBody.holding);
         break;
       case "addUserContribution":
-        response = handleAddUserContribution(requestBody.userEmail, requestBody.amount, requestBody.date);
+        response = handleAddUserContribution(requestBody.userEmail, requestBody.amount, requestBody.date, requestBody.notes, requestBody.isMonthly);
         break;
       case "addPortfolioHistory":
         response = handleAddPortfolioHistory(requestBody.date, requestBody.value);
@@ -359,6 +360,8 @@ function getUserDetails(email) {
             const logEmailIndex = contributionsHeaders.indexOf("Email");
             const logAmountIndex = contributionsHeaders.indexOf("Amount");
             const logDateIndex = contributionsHeaders.indexOf("Date");
+            const logNotesIndex = contributionsHeaders.indexOf("Notes");
+            const logIsMonthlyIndex = contributionsHeaders.indexOf("IsMonthly");
 
             contributionsData.forEach(row => {
                 const currentEmail = String(row[logEmailIndex]).trim().toLowerCase();
@@ -373,7 +376,8 @@ function getUserDetails(email) {
                         date: Utilities.formatDate(new Date(date), "GMT", "yyyy-MM-dd"),
                         amount: amount,
                         status: "Approved", // Assuming all logged contributions are approved
-                        notes: "User Contribution" // Generic note, could be expanded
+                        notes: logNotesIndex > -1 ? row[logNotesIndex] : "",
+                        isMonthly: logIsMonthlyIndex > -1 ? row[logIsMonthlyIndex] : false
                     });
 
                     if (!lastContributionDate || new Date(date) > new Date(lastContributionDate)) {
@@ -630,10 +634,11 @@ function handleUpdatePortfolioHolding(rowIndex, holding) {
     return { message: `Holding '${holding['Stock Name']}' updated successfully.` };
 }
 
-function handleAddUserContribution(userEmail, amount, date) {
+function handleAddUserContribution(userEmail, amount, date, notes, isMonthly) {
     const logSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("ContributionsLog");
     if (!logSheet) throw new Error("Sheet 'ContributionsLog' not found. Please create it.");
-    logSheet.appendRow([userEmail, amount, new Date(date)]);
+    // Assuming headers are Email, Amount, Date, Notes, IsMonthly
+    logSheet.appendRow([userEmail, amount, new Date(date), notes || "", isMonthly || false]);
     recalculateDashboardMetrics();
     return { message: `Contribution for '${userEmail}' logged successfully.` };
 }

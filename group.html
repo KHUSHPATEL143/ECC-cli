@@ -78,7 +78,7 @@
         <div class="bg-card-navy p-6 rounded-2xl border border-[rgba(203,163,90,0.3)] shadow-card-luxury">
             <h3 class="font-heading text-xl font-bold text-secondary-gold mb-4">MEMBERS</h3>
             <div id="membersContainer" class="space-y-4">
-                <!-- Member cards will be dynamically loaded here -->
+                <p class="text-text-secondary-light text-center">Loading members...</p>
             </div>
         </div>
     </main>
@@ -114,66 +114,62 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async function() {
-            if (sessionStorage.getItem('isAdmin') === 'true') {
+            checkAuthentication(); // Add this line
+            if (localStorage.getItem('isAdmin') === 'true') {
                 const adminLink = document.getElementById('admin-link');
                 if(adminLink) adminLink.style.display = 'flex';
             }
 
+            const ADMIN_EMAILS = ["khushpatel9979@gmail.com", "janmejay@gmail.com"];
+
             // Fetch members data
             async function fetchMembersData() {
+                const membersContainer = document.getElementById('membersContainer');
                 try {
                     const response = await fetch(`${APPS_SCRIPT_URL}?page=members`);
                     const result = await response.json();
 
                     if (result.status === 'success' && result.data) {
-                        const membersContainer = document.getElementById('membersContainer');
-                        membersContainer.innerHTML = ''; // Clear existing mock data
+                        membersContainer.innerHTML = ''; // Clear loading message
 
                         let totalContributions = 0;
-                        result.data.forEach(member => {
-                            const contribution = parseFloat(member['Contribution']) || 0;
-                            totalContributions += contribution;
+                        if (result.data.length === 0) {
+                            membersContainer.innerHTML = '<p class="text-text-secondary-light text-center">No members found.</p>';
+                        } else {
+                            result.data.forEach(member => {
+                                const contribution = parseFloat(member['Contribution']) || 0;
+                                totalContributions += contribution;
 
-                            const memberCard = `
-                                <div class="flex justify-between items-center p-4 bg-deep-navy rounded-lg">
-                                    <div>
-                                        <p class="font-semibold text-text-primary-light flex items-center">
-                                            ${member['Name']}
-                                            ${member['Name'] === 'Khushi' ? `
-                                            <span class="verified-badge ml-2">
-                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="icon-sm">
-                                                    <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.06l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5Z" clip-rule="evenodd" />
-                                                </svg>
-                                                Admin
-                                            </span>` : ''}
-                                        </p>
-                                        <p class="text-sm text-text-secondary-light">Joined ${member['Join Date']}</p>
+                                const memberCard = `
+                                    <div class="flex justify-between items-center p-4 bg-deep-navy rounded-lg">
+                                        <div>
+                                            <p class="font-semibold text-text-primary-light flex items-center">
+                                                ${member['Name']}
+                                                                                                                                        </p>
+                                            <p class="text-sm text-text-secondary-light">Joined ${member['Join Date']}</p>
+                                        </div>
+                                        <p class="font-bold text-lg text-primary-gold">₹${new Intl.NumberFormat('en-IN').format(contribution)}</p>
                                     </div>
-                                    <p class="font-bold text-lg text-primary-gold">₹${new Intl.NumberFormat('en-IN').format(contribution)}</p>
-                                </div>
-                            `;
-                            membersContainer.innerHTML += memberCard;
-                        });
+                                `;
+                                membersContainer.innerHTML += memberCard;
+                            });
+                        }
 
                         document.getElementById('totalMembers').textContent = result.data.length;
                         document.getElementById('totalContributions').textContent = new Intl.NumberFormat('en-IN').format(totalContributions);
 
                     } else {
+                        membersContainer.innerHTML = `<p class="text-error-red text-center">Failed to load members: ${result.message || 'Unknown error'}</p>`;
                         console.error('Failed to fetch members data:', result.message);
                     }
                 } catch (error) {
+                    membersContainer.innerHTML = `<p class="text-error-red text-center">An error occurred while fetching members.</p>`;
                     console.error('Error fetching members data:', error);
                 }
             }
 
             fetchMembersData();
         });
-    </script>
-    <script>
-        // Notification functions are now in script.js
-    </script>
-    <script>
-        // User menu setup is now in script.js
     </script>
     <script src="script.js"></script>
 </body>

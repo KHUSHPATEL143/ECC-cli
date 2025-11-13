@@ -147,6 +147,11 @@
                         <input type="date" id="contributionDate" required
                             class="w-full bg-deep-navy border-b border-primary-gold text-text-primary-light p-2 input-glow-focus"
                             style="color-scheme: dark;">
+                        <textarea id="contributionNotes" placeholder="Notes (optional)" rows="2" class="w-full bg-deep-navy border-b border-primary-gold text-text-primary-light p-2 input-glow-focus"></textarea>
+                        <div class="flex items-center">
+                            <input type="checkbox" id="isMonthlyPayment" class="h-4 w-4 rounded border-gray-300 text-primary-gold focus:ring-primary-gold" style="color-scheme: dark;">
+                            <label for="isMonthlyPayment" class="ml-2 block text-sm text-text-primary-light">Is this a monthly payment?</label>
+                        </div>
                     </div>
                     <button type="submit"
                         class="w-full mt-4 py-2 text-secondary-gold font-bold border border-primary-gold rounded-full hover:shadow-gold-glow">Add
@@ -258,7 +263,27 @@
         let allHoldings = [];
         let allHistoryPoints = [];
 
-        async function handleAdminAction(action, body, messageDiv) {
+        function setButtonLoading(button, isLoading) {
+            if (!button) return;
+            if (isLoading) {
+                button.disabled = true;
+                button.dataset.originalText = button.innerHTML;
+                button.innerHTML = `
+                    <svg class="animate-spin h-5 w-5 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                `;
+            } else {
+                button.disabled = false;
+                if (button.dataset.originalText) {
+                    button.innerHTML = button.dataset.originalText;
+                }
+            }
+        }
+
+        async function handleAdminAction(action, body, messageDiv, button) {
+            if (button) setButtonLoading(button, true);
             messageDiv.style.display = 'none';
             messageDiv.classList.remove('text-success-green', 'text-error-red');
 
@@ -277,8 +302,10 @@
             } catch (error) {
                 messageDiv.textContent = error.message;
                 messageDiv.classList.add('text-error-red');
+            } finally {
+                if (button) setButtonLoading(button, false);
+                messageDiv.style.display = 'block';
             }
-            messageDiv.style.display = 'block';
         }
 
         // --- Load Initial Data ---
@@ -331,8 +358,8 @@
                                 <p class="text-text-secondary-light text-sm">${user.Email}</p>
                             </div>
                             <div class="flex items-center mt-2 sm:mt-0">
-                                <button class="text-success-green hover:text-green-400 text-sm font-bold py-1 px-3 rounded-full border border-success-green mr-2" onclick="approveUser('${user.Email}')">Approve</button>
-                                <button class="text-error-red hover:text-red-400 text-sm font-bold py-1 px-3 rounded-full border border-error-red" onclick="rejectUser('${user.Email}')">Reject</button>
+                                <button class="text-success-green hover:text-green-400 text-sm font-bold py-1 px-3 rounded-full border border-success-green mr-2" onclick="approveUser('${user.Email}', this)">Approve</button>
+                                <button class="text-error-red hover:text-red-400 text-sm font-bold py-1 px-3 rounded-full border border-error-red" onclick="rejectUser('${user.Email}', this)">Reject</button>
                             </div>
                         `;
                         container.appendChild(div);
@@ -347,14 +374,14 @@
             }
         }
 
-        async function approveUser(email) {
-            await handleAdminAction('approveUser', { email }, document.getElementById('pendingUsersMessage'));
+        async function approveUser(email, button) {
+            await handleAdminAction('approveUser', { email }, document.getElementById('pendingUsersMessage'), button);
             loadPendingUsers();
             loadMembers();
         }
 
-        async function rejectUser(email) {
-            await handleAdminAction('rejectUser', { email }, document.getElementById('pendingUsersMessage'));
+        async function rejectUser(email, button) {
+            await handleAdminAction('rejectUser', { email }, document.getElementById('pendingUsersMessage'), button);
             loadPendingUsers();
         }
 
@@ -515,67 +542,86 @@
 
             loadInitialData();
 
-            document.getElementById('recalculateButton').addEventListener('click', async () => {
-                await handleAdminAction('recalculateMetrics', {}, document.getElementById('dashboardMessage'));
+            document.getElementById('recalculateButton').addEventListener('click', async (e) => {
+                await handleAdminAction('recalculateMetrics', {}, document.getElementById('dashboardMessage'), e.target);
             });
 
             document.getElementById('dashboardMetricsForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const form = e.target;
+                const button = form.querySelector('button[type="submit"]');
                 const messageDiv = document.getElementById('dashboardMessage');
-                const inputs = e.target.elements;
-                for (const input of inputs) {
-                    if (input.name && input.value) {
-                        await handleAdminAction('updateDashboardMetric', { metricName: input.name, metricValue: input.value }, messageDiv);
+                const inputs = form.elements;
+                
+                setButtonLoading(button, true);
+                try {
+                    for (const input of inputs) {
+                        if (input.name && input.value) {
+                            // We don't pass the button here to avoid toggling it on each loop
+                            await handleAdminAction('updateDashboardMetric', { metricName: input.name, metricValue: input.value }, messageDiv);
+                        }
                     }
+                } finally {
+                    setButtonLoading(button, false);
+                    form.reset();
                 }
-                e.target.reset();
             });
 
             document.getElementById('addUserForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const form = e.target;
+                const button = form.querySelector('button[type="submit"]');
                 const body = {
                     newName: document.getElementById('newName').value,
                     newEmail: document.getElementById('newEmail').value,
                     newPassword: document.getElementById('newPassword').value
                 };
-                await handleAdminAction('addUser', body, document.getElementById('addUserMessage'));
-                e.target.reset();
+                await handleAdminAction('addUser', body, document.getElementById('addUserMessage'), button);
+                form.reset();
                 loadMembers();
             });
 
             document.getElementById('addContributionForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const form = e.target;
+                const button = form.querySelector('button[type="submit"]');
                 const body = {
                     userEmail: document.getElementById('userSelect').value,
                     amount: document.getElementById('contributionAmount').value,
-                    date: document.getElementById('contributionDate').value
+                    date: document.getElementById('contributionDate').value,
+                    notes: document.getElementById('contributionNotes').value,
+                    isMonthly: document.getElementById('isMonthlyPayment').checked
                 };
-                await handleAdminAction('addUserContribution', body, document.getElementById('contributionMessage'));
-                e.target.reset();
+                await handleAdminAction('addUserContribution', body, document.getElementById('contributionMessage'), button);
+                form.reset();
             });
 
             document.getElementById('notificationForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const form = e.target;
+                const button = form.querySelector('button[type="submit"]');
                 const body = {
                     message: document.getElementById('notificationMessage').value,
                     targetEmail: document.getElementById('notificationTarget').value
                 };
-                await handleAdminAction('addNotification', body, document.getElementById('notificationFormMessage'));
-                e.target.reset();
+                await handleAdminAction('addNotification', body, document.getElementById('notificationFormMessage'), button);
+                form.reset();
                 loadNotifications();
             });
 
             document.getElementById('portfolioHistoryForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const form = e.target;
+                const button = form.querySelector('button[type="submit"]');
                 const action = document.getElementById('historyAction').value;
                 const messageDiv = document.getElementById('historyMessage');
                 const point = { date: document.getElementById('historyDate').value, value: document.getElementById('historyValue').value };
 
                 if (action === 'update') {
                     const rowIndex = document.getElementById('historyRowIndex').value;
-                    await handleAdminAction('updatePortfolioHistory', { rowIndex, point }, messageDiv);
+                    await handleAdminAction('updatePortfolioHistory', { rowIndex, point }, messageDiv, button);
                 } else {
-                    await handleAdminAction('addPortfolioHistory', point, messageDiv);
+                    await handleAdminAction('addPortfolioHistory', point, messageDiv, button);
                 }
                 resetHistoryForm();
                 loadHistoryPoints();
@@ -583,6 +629,8 @@
 
             document.getElementById('holdingForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const form = e.target;
+                const button = form.querySelector('button[type="submit"]');
                 const action = document.getElementById('holdingAction').value;
                 const messageDiv = document.getElementById('holdingMessage');
                 const holding = {
@@ -594,9 +642,9 @@
 
                 if (action === 'update') {
                     const rowIndex = document.getElementById('holdingRowIndex').value;
-                    await handleAdminAction('updatePortfolioHolding', { rowIndex, holding }, messageDiv);
+                    await handleAdminAction('updatePortfolioHolding', { rowIndex, holding }, messageDiv, button);
                 } else {
-                    await handleAdminAction('addPortfolioHolding', { holding }, messageDiv);
+                    await handleAdminAction('addPortfolioHolding', { holding }, messageDiv, button);
                 }
                 resetHoldingForm();
                 loadHoldings();
