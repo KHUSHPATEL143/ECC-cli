@@ -6,6 +6,11 @@ import { Loader } from '../components/Loader';
 import { useAuth } from '../context/AuthContext';
 import { Edit2, Save, X } from 'lucide-react';
 
+const safeFloat = (val: any): number => {
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? 0 : parsed;
+};
+
 const InfoBlock = ({ label, value, subValue, subColor }: { label: string, value: string, subValue?: string, subColor?: string }) => (
     <div className="bg-navy-900 p-4 rounded-lg border border-gold-600/10">
         <p className="text-xs text-subtext uppercase tracking-wide mb-1">{label}</p>
@@ -30,7 +35,6 @@ export const User: React.FC = () => {
   const fetchDetails = async () => {
     if (user?.email) {
         try {
-            // Fetch User, Portfolio, and Members in parallel for accurate calculation
             const [userRes, portfolioRes, membersRes] = await Promise.all([
                 api.getUserDetails(user.email),
                 api.getPortfolio(),
@@ -45,7 +49,7 @@ export const User: React.FC = () => {
             if (portfolioRes.status === 'success') {
                 const port = portfolioRes.data;
                 const invested = port.reduce((acc, item) => acc + (item['Purchase Price'] * item.Shares), 0);
-                const current = port.reduce((acc, item) => acc + (item['Current Price'] * item.Shares), 0);
+                const current = port.reduce((acc, item) => acc + (safeFloat(item['Current Price']) * item.Shares), 0);
                 setGlobalInvested(invested);
                 setGlobalPL(current - invested);
             }
@@ -89,27 +93,12 @@ export const User: React.FC = () => {
   if (!details) return <div>Error loading profile</div>;
 
   // --- CLIENT-SIDE CALCULATION LOGIC ---
-  
-  // 1. Determine User's Ownership Ratio
   const userContribution = details.totalContribution;
-  // Avoid division by zero
   const ownershipRatio = groupTotalContrib > 0 ? userContribution / groupTotalContrib : 0;
-
-  // 2. Calculate User's Portion of Invested Stocks
-  // (Total Global Invested * User Ratio)
   const userInvestedInStocks = globalInvested * ownershipRatio;
-
-  // 3. Calculate Global Return Percentage
-  // (Global P/L / Global Invested)
   const globalReturnRatio = globalInvested > 0 ? (globalPL / globalInvested) : 0;
   const globalReturnPercentage = globalReturnRatio * 100;
-
-  // 4. Calculate User's Net Return
-  // (User Invested * Global Return Ratio)
   const netReturn = userInvestedInStocks * globalReturnRatio;
-
-  // 5. Calculate Current Value
-  // (Contribution + Profit/Loss)
   const currentValue = userContribution + netReturn;
 
   // Formatting

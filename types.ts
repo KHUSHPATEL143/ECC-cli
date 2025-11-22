@@ -17,14 +17,18 @@ export interface DashboardData {
   "Total Return"?: number;
   "Return Percentage"?: string;
   "Invested in Stocks"?: number;
+  "aiInsight"?: string;
+  "expectedReturn"?: string;
 }
 
 export interface PortfolioItem {
   "Stock Name": string;
   "Company Name"?: string;
+  "Ticker"?: string;
+  "Type"?: string; // Added Type field
   "Shares": number;
   "Purchase Price": number;
-  "Current Price": number;
+  "Current Price": number | string; // Can be string/number depending on sheet state
   rowIndex?: number;
 }
 

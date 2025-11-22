@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -62,102 +63,118 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-navy-900 p-4 font-body text-cream">
-      <div className="mb-8 text-center">
-        <h1 className="font-heading text-4xl md:text-5xl font-bold text-gold-500 tracking-wider drop-shadow-[0_0_10px_rgba(212,175,55,0.3)]">
-          ELEVATE CAPITAL
+    <div className="min-h-screen flex flex-col items-center justify-center bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-navy-800 via-navy-900 to-black p-4 font-body text-cream relative overflow-hidden">
+      
+      {/* Ambient Background Glow */}
+      <div className="absolute top-[-20%] left-[50%] -translate-x-1/2 w-[600px] h-[600px] bg-gold-600/5 rounded-full blur-[100px] pointer-events-none"></div>
+
+      <div className="mb-10 text-center z-10">
+        <h1 className="font-heading text-5xl md:text-6xl font-bold text-gold-500 tracking-widest drop-shadow-[0_2px_10px_rgba(212,175,55,0.3)]">
+          ELEVATE
         </h1>
-        <p className="text-subtext tracking-[0.3em] mt-2 text-sm">COLLECTIVE</p>
+        <p className="text-gold-400/70 tracking-[0.4em] mt-2 text-xs uppercase font-semibold">Capital Collective</p>
       </div>
 
-      <div className="w-full max-w-md bg-navy-800 p-8 rounded-2xl border border-gold-600/30 shadow-luxury relative overflow-hidden">
-        {/* Decorative Elements */}
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gold-500 to-transparent opacity-50"></div>
+      <div className="w-full max-w-md bg-navy-800/60 backdrop-blur-xl p-8 md:p-10 rounded-3xl border border-gold-500/20 shadow-2xl relative z-10">
         
-        <h2 className="font-heading text-2xl font-bold text-gold-500 mb-6 text-center">
-          {isLogin ? 'MEMBER ACCESS' : 'REQUEST MEMBERSHIP'}
+        <h2 className="font-heading text-2xl font-bold text-cream mb-8 text-center tracking-wide">
+          {isLogin ? 'MEMBER ACCESS' : 'JOIN THE CLUB'}
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {!isLogin && (
-             <>
+             <div className="space-y-5 animate-in slide-in-from-top-4 fade-in duration-500">
               <div>
-                <label className="block text-xs text-gold-400 mb-1 uppercase tracking-wider">Full Name</label>
                 <input
                   type="text"
                   required
-                  className="w-full bg-navy-900/50 border-b border-gold-600/50 text-cream p-3 focus:outline-none focus:border-gold-400 focus:bg-navy-900 transition-all"
+                  placeholder="Full Name"
+                  className="w-full bg-navy-900/80 border border-gold-600/20 text-cream px-5 py-3.5 rounded-xl focus:outline-none focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/50 transition-all placeholder:text-subtext/50"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
               <div>
-                <label className="block text-xs text-gold-400 mb-1 uppercase tracking-wider">Mobile</label>
                 <input
                   type="tel"
                   required
-                  className="w-full bg-navy-900/50 border-b border-gold-600/50 text-cream p-3 focus:outline-none focus:border-gold-400 focus:bg-navy-900 transition-all"
+                  placeholder="Mobile Number"
+                  className="w-full bg-navy-900/80 border border-gold-600/20 text-cream px-5 py-3.5 rounded-xl focus:outline-none focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/50 transition-all placeholder:text-subtext/50"
                   value={formData.mobile}
                   onChange={(e) => setFormData({ ...formData, mobile: e.target.value })}
                 />
               </div>
-             </>
+             </div>
           )}
 
           <div>
-            <label className="block text-xs text-gold-400 mb-1 uppercase tracking-wider">Email Address</label>
             <input
               type="email"
               required
-              className="w-full bg-navy-900/50 border-b border-gold-600/50 text-cream p-3 focus:outline-none focus:border-gold-400 focus:bg-navy-900 transition-all"
+              placeholder="Email Address"
+              className="w-full bg-navy-900/80 border border-gold-600/20 text-cream px-5 py-3.5 rounded-xl focus:outline-none focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/50 transition-all placeholder:text-subtext/50"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-xs text-gold-400 mb-1 uppercase tracking-wider">Password</label>
             <input
               type="password"
               required
-              className="w-full bg-navy-900/50 border-b border-gold-600/50 text-cream p-3 focus:outline-none focus:border-gold-400 focus:bg-navy-900 transition-all"
+              placeholder="Password"
+              className="w-full bg-navy-900/80 border border-gold-600/20 text-cream px-5 py-3.5 rounded-xl focus:outline-none focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/50 transition-all placeholder:text-subtext/50"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             />
           </div>
 
           {!isLogin && (
-            <div className="flex items-center pt-2">
+            <div className="flex items-center pt-2 px-2">
               <input 
                 type="checkbox" 
                 id="terms" 
-                className="accent-gold-500 w-4 h-4" 
+                className="accent-gold-500 w-4 h-4 rounded cursor-pointer" 
                 checked={formData.terms}
                 onChange={(e) => setFormData({...formData, terms: e.target.checked})}
               />
-              <label htmlFor="terms" className="ml-2 text-xs text-subtext">I agree to the Terms & Conditions</label>
+              <label htmlFor="terms" className="ml-3 text-xs text-subtext cursor-pointer select-none">
+                I agree to the <span className="text-gold-400 hover:underline">Terms & Conditions</span>
+              </label>
             </div>
           )}
 
-          {error && <div className="text-error text-sm text-center py-2 bg-error/10 rounded">{error}</div>}
+          {error && (
+            <div className="text-error text-xs text-center py-2 bg-error/5 border border-error/20 rounded-lg">
+              {error}
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-6 py-3 text-navy-900 font-bold uppercase tracking-widest bg-gold-500 rounded-sm hover:bg-gold-400 hover:shadow-gold-glow transition-all duration-300 disabled:opacity-50"
+            className="w-full mt-8 py-4 text-navy-900 font-bold uppercase tracking-widest text-sm bg-gradient-to-r from-gold-600 via-gold-500 to-gold-400 rounded-full hover:shadow-[0_0_20px_rgba(212,175,55,0.4)] transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
           >
-            {loading ? <Loader /> : (isLogin ? 'Enter' : 'Submit Request')}
+            {loading ? <Loader /> : (isLogin ? 'Sign In' : 'Request Access')}
           </button>
         </form>
 
         <div className="mt-8 text-center">
           <button
             onClick={() => { setIsLogin(!isLogin); setError(''); }}
-            className="text-xs text-gold-600 hover:text-gold-400 underline underline-offset-4 transition-colors"
+            className="text-xs font-medium text-subtext hover:text-gold-400 transition-colors"
           >
-            {isLogin ? 'Request Access / Create Account' : 'Already a member? Sign In'}
+            {isLogin ? (
+              <>New here? <span className="text-gold-500 underline underline-offset-4 decoration-gold-500/30">Request Membership</span></>
+            ) : (
+              <>Already a member? <span className="text-gold-500 underline underline-offset-4 decoration-gold-500/30">Sign In</span></>
+            )}
           </button>
         </div>
+      </div>
+      
+      <div className="mt-8 text-[10px] text-gold-600/30 tracking-widest uppercase">
+        Exclusive Investment Group
       </div>
     </div>
   );

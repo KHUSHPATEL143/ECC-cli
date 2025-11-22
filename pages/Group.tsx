@@ -5,6 +5,11 @@ import { Member } from '../types';
 import { Loader } from '../components/Loader';
 import { Users, Banknote, TrendingUp } from 'lucide-react';
 
+const safeFloat = (val: any): number => {
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? 0 : parsed;
+};
+
 export const Group: React.FC = () => {
   const [members, setMembers] = useState<Member[]>([]);
   const [portfolioPL, setPortfolioPL] = useState(0);
@@ -20,7 +25,7 @@ export const Group: React.FC = () => {
             if (mems.status === 'success') setMembers(mems.data);
             if (port.status === 'success') {
                 const totalInvested = port.data.reduce((acc, item) => acc + (item['Purchase Price'] * item.Shares), 0);
-                const currentValue = port.data.reduce((acc, item) => acc + (item['Current Price'] * item.Shares), 0);
+                const currentValue = port.data.reduce((acc, item) => acc + (safeFloat(item['Current Price']) * item.Shares), 0);
                 setPortfolioPL(currentValue - totalInvested);
             }
         } catch (e) {

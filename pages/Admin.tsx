@@ -37,7 +37,16 @@ export const Admin: React.FC = () => {
         email: '', amount: '', date: new Date().toISOString().split('T')[0], notes: '', isMonthly: false 
     });
     
-    const [holdingForm, setHoldingForm] = useState({ stockName: '', shares: '', purchasePrice: '', currentPrice: '' });
+    // Portfolio Form State
+    const [holdingForm, setHoldingForm] = useState({ 
+        stockName: '', 
+        ticker: '', 
+        type: 'Stock',
+        shares: '', 
+        purchasePrice: '', 
+        currentPrice: '', 
+        useGoogleFinance: false 
+    });
     const [editingHoldingIndex, setEditingHoldingIndex] = useState<number | null>(null);
 
     const [historyForm, setHistoryForm] = useState({ date: new Date().toISOString().split('T')[0], value: '' });
@@ -67,11 +76,9 @@ export const Admin: React.FC = () => {
             if (mems.status === 'success') setMembers(mems.data);
             if (ports.status === 'success') setHoldings(ports.data);
             if (hist.status === 'success') {
-                // Reconstruct points object from separate arrays if points not directly provided (api might return separate arrays)
                 if (hist.data.points) {
                     setHistoryPoints(hist.data.points);
                 } else {
-                    // Fallback if backend doesn't send points array
                     const constructed = hist.data.labels.map((l, i) => ({ date: l, value: hist.data.data[i], rowIndex: i }));
                     setHistoryPoints(constructed);
                 }
@@ -143,19 +150,21 @@ export const Admin: React.FC = () => {
         if (!user?.email) return;
         setOpLoading(true);
         try {
-            const holdingData = {
+            const holdingData: Partial<PortfolioItem> = {
                 "Stock Name": holdingForm.stockName,
+                "Ticker": holdingForm.ticker,
+                "Type": holdingForm.type,
                 "Shares": parseFloat(holdingForm.shares),
                 "Purchase Price": parseFloat(holdingForm.purchasePrice),
-                "Current Price": parseFloat(holdingForm.currentPrice)
+                "Current Price": holdingForm.useGoogleFinance ? 0 : parseFloat(holdingForm.currentPrice) // Ignored if dynamic
             };
 
             if (editingHoldingIndex !== null) {
-                await api.updateHolding(editingHoldingIndex, holdingData, user.email);
+                await api.updateHolding(editingHoldingIndex, holdingData, holdingForm.useGoogleFinance, user.email);
             } else {
-                await api.addHolding(holdingData, user.email);
+                await api.addHolding(holdingData, holdingForm.useGoogleFinance, user.email);
             }
-            setHoldingForm({ stockName: '', shares: '', purchasePrice: '', currentPrice: '' });
+            setHoldingForm({ stockName: '', ticker: '', type: 'Stock', shares: '', purchasePrice: '', currentPrice: '', useGoogleFinance: false });
             setEditingHoldingIndex(null);
             loadData();
         } finally { setOpLoading(false); }
@@ -165,15 +174,18 @@ export const Admin: React.FC = () => {
         setEditingHoldingIndex(index);
         setHoldingForm({
             stockName: h["Stock Name"],
+            ticker: h.Ticker || '',
+            type: h.Type || 'Stock',
             shares: h.Shares.toString(),
             purchasePrice: h["Purchase Price"].toString(),
-            currentPrice: h["Current Price"].toString()
+            currentPrice: h["Current Price"].toString(),
+            useGoogleFinance: false // Default to false when editing, user can opt-in
         });
     };
 
     const cancelEditHolding = () => {
         setEditingHoldingIndex(null);
-        setHoldingForm({ stockName: '', shares: '', purchasePrice: '', currentPrice: '' });
+        setHoldingForm({ stockName: '', ticker: '', type: 'Stock', shares: '', purchasePrice: '', currentPrice: '', useGoogleFinance: false });
     };
 
     const deleteHolding = async (stockName: string) => {
@@ -205,7 +217,6 @@ export const Admin: React.FC = () => {
 
     const editHistory = (index: number, point: PortfolioHistoryPoint) => {
         setEditingHistoryIndex(index);
-        // Ensure date format is YYYY-MM-DD
         const d = new Date(point.date);
         const dateStr = !isNaN(d.getTime()) ? d.toISOString().split('T')[0] : point.date;
         setHistoryForm({
@@ -246,7 +257,6 @@ export const Admin: React.FC = () => {
 
     return (
         <div className="space-y-8">
-            {/* Tabs */}
             <div className="flex flex-wrap gap-3 pb-4 border-b border-gold-600/10">
                 <TabButton id="overview" label="Overview" icon={UserCheck} />
                 <TabButton id="notifications" label="Broadcast" icon={Bell} />
@@ -255,10 +265,8 @@ export const Admin: React.FC = () => {
                 <TabButton id="users" label="Chart Data" icon={TrendingUp} />
             </div>
 
-            {/* Content */}
             <div className="min-h-[400px]">
                 
-                {/* 1. Overview / Pending Users */}
                 {activeTab === 'overview' && (
                     <div className="bg-navy-800 p-6 rounded-2xl border border-gold-600/20 shadow-luxury">
                         <h2 className="font-heading text-xl font-bold text-gold-500 mb-4">Pending Approvals</h2>
@@ -296,7 +304,6 @@ export const Admin: React.FC = () => {
                     </div>
                 )}
 
-                {/* 2. Notifications */}
                 {activeTab === 'notifications' && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div className="bg-navy-800 p-6 rounded-2xl border border-gold-600/20 shadow-luxury">
@@ -349,7 +356,6 @@ export const Admin: React.FC = () => {
                     </div>
                 )}
 
-                {/* 3. Contributions */}
                 {activeTab === 'contributions' && (
                     <div className="bg-navy-800 p-6 rounded-2xl border border-gold-600/20 shadow-luxury max-w-2xl mx-auto">
                         <h2 className="font-heading text-xl font-bold text-gold-500 mb-6">Log User Contribution</h2>
@@ -417,7 +423,6 @@ export const Admin: React.FC = () => {
                     </div>
                 )}
 
-                {/* 4. Portfolio Management */}
                 {activeTab === 'portfolio' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-1 bg-navy-800 p-6 rounded-2xl border border-gold-600/20 shadow-luxury h-fit sticky top-24">
@@ -430,12 +435,43 @@ export const Admin: React.FC = () => {
                                 )}
                             </div>
                             <form onSubmit={saveHolding} className="space-y-4">
-                                <input type="text" placeholder="Stock Name" required value={holdingForm.stockName} onChange={e => setHoldingForm({...holdingForm, stockName: e.target.value})} className="w-full bg-navy-900 border border-gold-600/30 p-3 rounded text-cream" />
-                                <input type="number" placeholder="Shares" required value={holdingForm.shares} onChange={e => setHoldingForm({...holdingForm, shares: e.target.value})} className="w-full bg-navy-900 border border-gold-600/30 p-3 rounded text-cream" />
-                                <input type="number" placeholder="Purchase Price" required value={holdingForm.purchasePrice} onChange={e => setHoldingForm({...holdingForm, purchasePrice: e.target.value})} className="w-full bg-navy-900 border border-gold-600/30 p-3 rounded text-cream" />
-                                <input type="number" placeholder="Current Price" required value={holdingForm.currentPrice} onChange={e => setHoldingForm({...holdingForm, currentPrice: e.target.value})} className="w-full bg-navy-900 border border-gold-600/30 p-3 rounded text-cream" />
+                                <div>
+                                    <label className="block text-xs text-gold-400 mb-1 uppercase">Asset Type</label>
+                                    <select 
+                                        value={holdingForm.type}
+                                        onChange={e => setHoldingForm({...holdingForm, type: e.target.value})}
+                                        className="w-full bg-navy-900 border border-gold-600/30 p-3 rounded text-cream focus:border-gold-400"
+                                    >
+                                        <option value="Stock">Stock</option>
+                                        <option value="Mutual Fund">Mutual Fund</option>
+                                        <option value="Crypto">Crypto</option>
+                                        <option value="Gold">Gold</option>
+                                        <option value="ETF">ETF</option>
+                                    </select>
+                                </div>
+                                
+                                <input type="text" placeholder="Asset Name (e.g. Reliance)" required value={holdingForm.stockName} onChange={e => setHoldingForm({...holdingForm, stockName: e.target.value})} className="w-full bg-navy-900 border border-gold-600/30 p-3 rounded text-cream" />
+                                <input type="text" placeholder="Ticker (e.g. NSE:RELIANCE)" value={holdingForm.ticker} onChange={e => setHoldingForm({...holdingForm, ticker: e.target.value})} className="w-full bg-navy-900 border border-gold-600/30 p-3 rounded text-cream" />
+                                <input type="number" placeholder="Shares / Units" required value={holdingForm.shares} onChange={e => setHoldingForm({...holdingForm, shares: e.target.value})} className="w-full bg-navy-900 border border-gold-600/30 p-3 rounded text-cream" />
+                                <input type="number" placeholder="Avg Purchase Price" required value={holdingForm.purchasePrice} onChange={e => setHoldingForm({...holdingForm, purchasePrice: e.target.value})} className="w-full bg-navy-900 border border-gold-600/30 p-3 rounded text-cream" />
+                                
+                                {!holdingForm.useGoogleFinance && (
+                                    <input type="number" placeholder="Current Price" required={!holdingForm.useGoogleFinance} value={holdingForm.currentPrice} onChange={e => setHoldingForm({...holdingForm, currentPrice: e.target.value})} className="w-full bg-navy-900 border border-gold-600/30 p-3 rounded text-cream" />
+                                )}
+
+                                <div className="flex items-center gap-2 p-2 border border-gold-600/10 rounded bg-navy-900/50">
+                                    <input 
+                                        type="checkbox" 
+                                        id="gfCheck" 
+                                        checked={holdingForm.useGoogleFinance} 
+                                        onChange={e => setHoldingForm({...holdingForm, useGoogleFinance: e.target.checked})}
+                                        className="accent-gold-500 w-4 h-4"
+                                    />
+                                    <label htmlFor="gfCheck" className="text-xs text-subtext cursor-pointer select-none">Use Live Price (GoogleFinance)</label>
+                                </div>
+
                                 <button type="submit" disabled={opLoading} className="btn-gold w-full py-3 font-bold uppercase rounded mt-2 flex justify-center items-center gap-2">
-                                    {opLoading ? <ButtonSpinner /> : (editingHoldingIndex !== null ? <><Save size={16}/> Update</> : <><Plus size={16}/> Add Stock</>)}
+                                    {opLoading ? <ButtonSpinner /> : (editingHoldingIndex !== null ? <><Save size={16}/> Update</> : <><Plus size={16}/> Add Asset</>)}
                                 </button>
                             </form>
                         </div>
@@ -445,8 +481,8 @@ export const Admin: React.FC = () => {
                                 <table className="w-full text-left">
                                     <thead>
                                         <tr className="text-subtext text-xs uppercase border-b border-gold-600/20">
-                                            <th className="py-3">Stock</th>
-                                            <th className="py-3 text-right">Shares</th>
+                                            <th className="py-3">Asset</th>
+                                            <th className="py-3 text-right">Units</th>
                                             <th className="py-3 text-right">Avg</th>
                                             <th className="py-3 text-right">Current</th>
                                             <th className="py-3 text-right">Action</th>
@@ -455,10 +491,16 @@ export const Admin: React.FC = () => {
                                     <tbody className="divide-y divide-gold-600/10">
                                         {holdings.map((h, idx) => (
                                             <tr key={idx} className={editingHoldingIndex === idx ? "bg-gold-600/10" : ""}>
-                                                <td className="py-3 text-cream">{h['Stock Name']}</td>
+                                                <td className="py-3 text-cream">
+                                                    <div className="font-bold">{h['Stock Name']}</div>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] text-gold-600/70 uppercase bg-gold-600/5 px-1 rounded">{h.Type || 'Stock'}</span>
+                                                        {h.Ticker && <span className="text-[10px] text-subtext">{h.Ticker}</span>}
+                                                    </div>
+                                                </td>
                                                 <td className="py-3 text-right text-subtext">{h.Shares}</td>
                                                 <td className="py-3 text-right text-subtext">₹{h['Purchase Price']}</td>
-                                                <td className="py-3 text-right text-cream">₹{h['Current Price']}</td>
+                                                <td className="py-3 text-right text-cream">₹{parseFloat(String(h['Current Price'])).toLocaleString() || 'Live'}</td>
                                                 <td className="py-3 text-right flex justify-end gap-2">
                                                     <button onClick={() => editHolding(idx, h)} disabled={opLoading} className="text-gold-400 hover:text-gold-200 p-1 disabled:opacity-50">
                                                         <Edit2 size={16} />
@@ -476,7 +518,6 @@ export const Admin: React.FC = () => {
                     </div>
                 )}
 
-                {/* 5. History / Chart Data */}
                 {activeTab === 'users' && (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         <div className="lg:col-span-1 bg-navy-800 p-6 rounded-2xl border border-gold-600/20 shadow-luxury h-fit sticky top-24">

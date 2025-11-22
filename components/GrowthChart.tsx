@@ -31,7 +31,10 @@ export const GrowthChart: React.FC<GrowthChartProps> = ({ data, height = "100%" 
         <Tooltip 
           contentStyle={{ backgroundColor: '#10121B', borderColor: '#CBA35A', borderRadius: '8px' }}
           itemStyle={{ color: '#E8E3D0' }}
-          formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Value']}
+          formatter={(value: any) => {
+              const num = parseFloat(value);
+              return [`₹${isNaN(num) ? '0' : num.toLocaleString('en-IN')}`, 'Value'];
+          }}
         />
         <Area type="monotone" dataKey="value" stroke="#CBA35A" strokeWidth={2} fillOpacity={1} fill="url(#colorValue)" />
       </AreaChart>

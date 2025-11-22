@@ -6,6 +6,11 @@ import { useAuth } from '../context/AuthContext';
 import { TrendingUp, DollarSign, PieChart, Activity, User, ShieldCheck, IndianRupee } from 'lucide-react';
 import { GrowthChart } from '../components/GrowthChart';
 
+const safeFloat = (val: any): number => {
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? 0 : parsed;
+};
+
 const StatCard = ({ title, value, icon: Icon, sub, subColor }: { title: string, value: string, icon: any, sub?: string, subColor?: string }) => (
   <div className="bg-navy-800 p-6 rounded-2xl border border-gold-600/20 shadow-luxury hover:border-gold-600/50 transition-all duration-300 group">
     <div className="flex justify-between items-start">
@@ -54,7 +59,7 @@ export const Dashboard: React.FC = () => {
 
         if (portfolioRes.status === 'success') {
             totalInvested = portfolioRes.data.reduce((acc, item) => acc + (item['Purchase Price'] * item.Shares), 0);
-            currentValue = portfolioRes.data.reduce((acc, item) => acc + (item['Current Price'] * item.Shares), 0);
+            currentValue = portfolioRes.data.reduce((acc, item) => acc + (safeFloat(item['Current Price']) * item.Shares), 0);
         }
 
         if (membersRes.status === 'success') {
@@ -78,10 +83,9 @@ export const Dashboard: React.FC = () => {
         }
         
         if (chartRes.status === 'success' && chartRes.data) {
-          // Transform chart data for Recharts
           const formatted = chartRes.data.labels.map((label, idx) => ({
             name: label,
-            value: chartRes.data.data[idx]
+            value: Number(chartRes.data.data[idx]) || 0
           }));
           setChartData(formatted);
         }

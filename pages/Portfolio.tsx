@@ -4,35 +4,43 @@ import { api } from '../services/api';
 import { PortfolioItem } from '../types';
 import { Loader } from '../components/Loader';
 import { GrowthChart } from '../components/GrowthChart';
-import { Download } from 'lucide-react';
+import { Download, RefreshCcw } from 'lucide-react';
+
+// Helper to safely convert potentially non-numeric dynamic sheet values to float
+const safeFloat = (val: any): number => {
+    const parsed = parseFloat(val);
+    return isNaN(parsed) ? 0 : parsed;
+};
 
 export const Portfolio: React.FC = () => {
   const [holdings, setHoldings] = useState<PortfolioItem[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchData = async () => {
-        try {
-            const [portRes, chartRes] = await Promise.all([
-                api.getPortfolio(),
-                api.getPortfolioHistory()
-            ]);
+  const fetchData = async () => {
+    try {
+        const [portRes, chartRes] = await Promise.all([
+            api.getPortfolio(),
+            api.getPortfolioHistory()
+        ]);
 
-            if (portRes.status === 'success') setHoldings(portRes.data);
-            if (chartRes.status === 'success' && chartRes.data) {
-                const formatted = chartRes.data.labels.map((label, idx) => ({
-                  name: label,
-                  value: chartRes.data.data[idx]
-                }));
-                setChartData(formatted);
-            }
-        } catch (e) {
-            console.error(e);
-        } finally {
-            setLoading(false);
+        if (portRes.status === 'success') setHoldings(portRes.data);
+        if (chartRes.status === 'success' && chartRes.data) {
+            const formatted = chartRes.data.labels.map((label, idx) => ({
+              name: label,
+              // Ensure chart values are clean numbers
+              value: parseFloat(String(chartRes.data.data[idx]).replace(/[^0-9.-]+/g, '')) || 0
+            }));
+            setChartData(formatted);
         }
-    };
+    } catch (e) {
+        console.error(e);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
   }, []);
 
@@ -40,10 +48,15 @@ export const Portfolio: React.FC = () => {
       window.print();
   };
 
+  const handleRefresh = () => {
+      setLoading(true);
+      fetchData();
+  }
+
   if (loading) return <Loader text="Loading Assets..." />;
 
   const totalInvested = holdings.reduce((acc, item) => acc + (item['Purchase Price'] * item.Shares), 0);
-  const currentValue = holdings.reduce((acc, item) => acc + (item['Current Price'] * item.Shares), 0);
+  const currentValue = holdings.reduce((acc, item) => acc + (safeFloat(item['Current Price']) * item.Shares), 0);
   const overallPL = currentValue - totalInvested;
 
   return (
@@ -77,12 +90,21 @@ export const Portfolio: React.FC = () => {
                             </span>
                         </div>
                     </div>
-                    <button 
-                        onClick={handleExportPDF}
-                        className="flex items-center gap-2 px-4 py-2 bg-gold-600 text-navy-900 font-bold text-xs uppercase tracking-wider rounded hover:bg-gold-500 transition-colors print:hidden"
-                    >
-                        <Download size={16} /> Export PDF
-                    </button>
+                    <div className="flex gap-2">
+                        <button 
+                            onClick={handleRefresh}
+                            className="p-2 bg-navy-900 text-gold-500 rounded border border-gold-600/30 hover:bg-gold-600/10 transition-colors print:hidden"
+                            title="Refresh Data"
+                        >
+                            <RefreshCcw size={16} />
+                        </button>
+                        <button 
+                            onClick={handleExportPDF}
+                            className="flex items-center gap-2 px-4 py-2 bg-gold-600 text-navy-900 font-bold text-xs uppercase tracking-wider rounded hover:bg-gold-500 transition-colors print:hidden"
+                        >
+                            <Download size={16} /> Export PDF
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -98,7 +120,7 @@ export const Portfolio: React.FC = () => {
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="text-gold-600 border-b border-gold-600/30 text-sm uppercase tracking-wider">
-                            <th className="py-4 px-4 font-semibold">Stock</th>
+                            <th className="py-4 px-4 font-semibold">Stock / Type</th>
                             <th className="py-4 px-4 font-semibold text-right">Shares</th>
                             <th className="py-4 px-4 font-semibold text-right">Avg Price</th>
                             <th className="py-4 px-4 font-semibold text-right">Current</th>
@@ -110,16 +132,26 @@ export const Portfolio: React.FC = () => {
                              <tr><td colSpan={5} className="py-8 text-center text-subtext">No active holdings.</td></tr>
                         ) : (
                             holdings.map((item, idx) => {
-                                const pl = (item['Current Price'] - item['Purchase Price']) * item.Shares;
+                                const current = safeFloat(item['Current Price']);
+                                const pl = (current - item['Purchase Price']) * item.Shares;
                                 return (
                                     <tr key={idx} className="hover:bg-gold-600/5 transition-colors print:text-black">
                                         <td className="py-4 px-4">
-                                            <div className="font-semibold text-cream print:text-black">{item['Stock Name']}</div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="font-semibold text-cream print:text-black">{item['Stock Name']}</div>
+                                                {item.Type && (
+                                                    // Unified Theme for all Badges
+                                                    <span className="text-[10px] px-2 py-0.5 rounded border bg-gold-600/10 border-gold-600 text-gold-500 font-medium tracking-wide">
+                                                        {item.Type}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {item.Ticker && <div className="text-[10px] text-gold-600/70 font-mono tracking-wider">{item.Ticker}</div>}
                                             <div className="text-xs text-subtext print:text-gray-600">{item['Company Name']}</div>
                                         </td>
                                         <td className="py-4 px-4 text-right text-cream print:text-black">{item.Shares}</td>
                                         <td className="py-4 px-4 text-right text-subtext print:text-black">₹{item['Purchase Price'].toLocaleString()}</td>
-                                        <td className="py-4 px-4 text-right text-cream print:text-black">₹{item['Current Price'].toLocaleString()}</td>
+                                        <td className="py-4 px-4 text-right text-cream print:text-black">₹{current.toLocaleString()}</td>
                                         <td className={`py-4 px-4 text-right font-bold ${pl >= 0 ? 'text-success' : 'text-error'}`}>
                                             {pl >= 0 ? '+' : ''}₹{pl.toLocaleString()}
                                         </td>

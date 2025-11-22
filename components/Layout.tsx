@@ -68,7 +68,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
       <header className="bg-navy-800 border-b border-gold-600/30 shadow-luxury px-6 py-4 sticky top-0 z-50 mt-0 print:hidden">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center gap-4">
-            <img src="assets/logo.png" alt="Logo" className="h-10 w-auto" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <img src="https://res.cloudinary.com/dgz5jcnzj/image/upload/v1763801552/logo_ikfhjx.png" alt="Logo" className="h-10 w-auto" onError={(e) => e.currentTarget.style.display = 'none'} />
             <div>
               <h1 className="font-heading text-2xl md:text-3xl font-bold text-gold-500 tracking-wider">
                 ELEVATE

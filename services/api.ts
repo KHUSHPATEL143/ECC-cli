@@ -83,11 +83,11 @@ export const api = {
   addContribution: (userEmail: string, amount: number, date: string, notes: string, isMonthly: boolean, adminEmail: string) =>
     fetchApi<{ message: string }>(null, { action: 'addUserContribution', userEmail, amount, date, notes, isMonthly, adminEmail }),
 
-  addHolding: (holding: Partial<PortfolioItem>, adminEmail: string) =>
-    fetchApi<{ message: string }>(null, { action: 'addPortfolioHolding', holding, adminEmail }),
+  addHolding: (holding: Partial<PortfolioItem>, useGoogleFinance: boolean, adminEmail: string) =>
+    fetchApi<{ message: string }>(null, { action: 'addPortfolioHolding', holding, useGoogleFinance, adminEmail }),
 
-  updateHolding: (rowIndex: number, holding: Partial<PortfolioItem>, adminEmail: string) =>
-    fetchApi<{ message: string }>(null, { action: 'updatePortfolioHolding', rowIndex, holding, adminEmail }),
+  updateHolding: (rowIndex: number, holding: Partial<PortfolioItem>, useGoogleFinance: boolean, adminEmail: string) =>
+    fetchApi<{ message: string }>(null, { action: 'updatePortfolioHolding', rowIndex, holding, useGoogleFinance, adminEmail }),
 
   deleteHolding: (stockName: string, adminEmail: string) =>
     fetchApi<{ message: string }>(null, { action: 'deletePortfolioHolding', stockName, adminEmail }),
